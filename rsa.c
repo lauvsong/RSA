@@ -30,6 +30,14 @@ BOB10_RSA *BOB10_RSA_new(){
     return ret;
 }
 
+
+int BOB10_RSA_free(BOB10_RSA *b10rsa){
+    OPENSSL_free(b10rsa->e);
+    OPENSSL_free(b10rsa->d);
+    OPENSSL_free(b10rsa->n);
+    OPENSSL_free(b10rsa);
+}
+
 void PrintUsage()
 {
     printf("usage: rsa [-k|-e e n plaintext|-d d n ciphertext]\n");
