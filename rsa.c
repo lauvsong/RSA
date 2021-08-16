@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
+#include <openssl/err.h>
 
 typedef struct _b10rsa_st {
     BIGNUM *e;
@@ -7,10 +9,26 @@ typedef struct _b10rsa_st {
     BIGNUM *n;
 }BOB10_RSA;
 
+BOB10_RSA *BOB10_RSA_new();
 int BOB10_RSA_free(BOB10_RSA *b10rsa);
 int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits);
 int BOB10_RSA_Enc(BIGNUM *c, BIGNUM *m, BOB10_RSA *b10rsa);
 int BOB10_RSA_Dec(BIGNUM *m,BIGNUM *c, BOB10_RSA *b10rsa);
+
+BOB10_RSA *BOB10_RSA_new(){
+    BOB10_RSA *ret;
+
+    if ((ret = OPENSSL_zalloc(sizeof(*ret))) == NULL) {
+        fprintf(stderr, "Error : fail to BOB10_RSA_new()");
+        return NULL;
+    }
+
+    ret->e = BN_new();
+    ret->d = BN_new();
+    ret->n = BN_new();
+
+    return ret;
+}
 
 void PrintUsage()
 {
