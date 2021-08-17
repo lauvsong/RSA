@@ -35,7 +35,7 @@ BOB10_RSA *BOB10_RSA_new()
 
 int BOB10_RSA_free(BOB10_RSA *b10rsa)
 {
-    if (b10rsa == NULL) return 0;
+    if (b10rsa == NULL) return 1;
     if (b10rsa->e != NULL) BN_free(b10rsa->e);
     if (b10rsa->d != NULL) BN_free(b10rsa->d);
     if (b10rsa->n != NULL) BN_free(b10rsa->n);
@@ -92,6 +92,47 @@ int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits)
     BN_copy(b10rsa->d,d);
     BN_copy(b10rsa->n,n);
 }
+
+int BOB10_RSA_Enc(BIGNUM *c, BIGNUM *m, BOB10_RSA *b10rsa)
+{
+    ExpMod(c,m,b10rsa->e,b10rsa->n);
+    return 1;
+}
+
+int BOB10_RSA_Dec(BIGNUM *m,BIGNUM *c, BOB10_RSA *b10rsa)
+{
+    ExpMod(m,c,b10rsa->d,b10rsa->n);
+    return 1;
+}
+
+// r = a**e mod m
+int ExpMod(BIGNUM *r, const BIGNUM *a, const BIGNUM *e, BIGNUM *m)
+{
+    BIGNUM *res = BN_new();
+    BIGNUM* rem = BN_new();
+    BIGNUM *q = BN_new();
+    BIGNUM *mul = BN_new();
+    BIGNUM *two = BN_new();
+    BN_CTX *ctx = BN_CTX_new();
+    
+    BN_one(res);
+    BN_mod(mul, a, m, ctx);
+    BN_copy(q, e);
+    BN_dec2bn(&two, "2");
+
+    while (!BN_is_zero(q)){
+        BN_div(q, rem, q, two, ctx);
+
+        if (BN_is_one(rem)) 
+            BN_mod_mul(res, res, mul, m, ctx);
+
+        BN_mod_mul(mul, mul, mul, m, ctx);
+    }
+
+    BN_copy(r, res);
+    return 1;
+}
+
 
 BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b)
 {
