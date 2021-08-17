@@ -3,7 +3,8 @@
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 
-typedef struct _b10rsa_st {
+typedef struct _b10rsa_st
+{
     BIGNUM *e;
     BIGNUM *d;
     BIGNUM *n;
@@ -14,8 +15,10 @@ int BOB10_RSA_free(BOB10_RSA *b10rsa);
 int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits);
 int BOB10_RSA_Enc(BIGNUM *c, BIGNUM *m, BOB10_RSA *b10rsa);
 int BOB10_RSA_Dec(BIGNUM *m,BIGNUM *c, BOB10_RSA *b10rsa);
+BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b);
 
-BOB10_RSA *BOB10_RSA_new(){
+BOB10_RSA *BOB10_RSA_new()
+{
     BOB10_RSA *ret;
 
     if ((ret = OPENSSL_zalloc(sizeof(*ret))) == NULL) {
@@ -30,12 +33,106 @@ BOB10_RSA *BOB10_RSA_new(){
     return ret;
 }
 
-
-int BOB10_RSA_free(BOB10_RSA *b10rsa){
-    OPENSSL_free(b10rsa->e);
-    OPENSSL_free(b10rsa->d);
-    OPENSSL_free(b10rsa->n);
+int BOB10_RSA_free(BOB10_RSA *b10rsa)
+{
+    if (b10rsa == NULL) return 0;
+    if (b10rsa->e != NULL) BN_free(b10rsa->e);
+    if (b10rsa->d != NULL) BN_free(b10rsa->d);
+    if (b10rsa->n != NULL) BN_free(b10rsa->n);
     OPENSSL_free(b10rsa);
+
+    return 1;
+}
+
+int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits)
+{
+    BIGNUM *p = BN_new();
+    BIGNUM *q = BN_new();
+    BIGNUM *n = BN_new();
+
+    BIGNUM *pp = BN_new();
+    BIGNUM *pq = BN_new();
+    BIGNUM *pn = BN_new();
+    BIGNUM *one = BN_new();
+
+    BIGNUM *e = BN_new();
+    BIGNUM *d = BN_new();
+    BN_CTX *ctx = BN_CTX_new();
+
+    // define p, q
+    BN_hex2bn(&p, "C485F491D12EA7E6FEB95794E9FE0A819168AAC9D545C9E2AE0C561622F265FEB965754C875E049B19F3F945F2574D57FA6A2FC0A0B99A2328F107DD16ADA2A7");
+    BN_hex2bn(&q, "F9A91C5F20FBBCCC4114FEBABFE9D6806A52AECDF5C9BAC9E72A07B0AE162B4540C62C52DF8A8181ABCC1A9E982DEB84DE500B27E902CD8FDED6B545C067CE4F");
+
+    // calculate n
+    BN_mul(n, p, q, ctx);
+
+    // calculate pn
+    BN_one(one);
+    BN_sub(pp, p, one);
+    BN_sub(pq, q, one);
+    BN_mul(pn, pp, pq, ctx);
+
+    // calculate e
+    BIGNUM *x = BN_new();
+    BIGNUM *y = BN_new();
+    
+    BN_hex2bn(&e, "2");
+
+    while (BN_cmp(e,pn) == -1){
+        e = XEuclid(x,y,e,pn);
+
+        if (BN_is_one(e)) break;
+        BN_add(e, e, one);
+    }
+
+    // calculate d
+    BN_copy(d,x);
+
+    BN_copy(b10rsa->e,e);
+    BN_copy(b10rsa->d,d);
+    BN_copy(b10rsa->n,n);
+}
+
+BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b)
+{
+    BIGNUM *r1 = BN_new();
+    BIGNUM *r2 = BN_new();
+    BIGNUM *s1 = BN_new();
+    BIGNUM *s2 = BN_new();
+    BIGNUM *t1 = BN_new();
+    BIGNUM *t2 = BN_new();
+
+    BIGNUM *q = BN_new();
+    BIGNUM *r = BN_new();
+    BN_CTX *ctx = BN_CTX_new();
+    BIGNUM *tmp = BN_new();
+
+    BN_copy(r1, a);
+    BN_copy(r2, b);
+    BN_one(s1);
+    BN_zero(s2);
+    BN_zero(t1);
+    BN_one(t2);
+
+    while(!BN_is_zero(r2)){
+        BN_div(q,r,r1,r2,ctx);
+        BN_copy(r1, r2);
+        BN_copy(r2, r);
+
+        BN_mul(tmp,q,s2,ctx);
+        BN_sub(x,s1,tmp);
+        BN_copy(s1, s2);
+        BN_copy(s2, x);
+
+        BN_mul(tmp,q,t2,ctx);
+        BN_sub(y,t1,tmp);
+        BN_copy(t1, t2);
+        BN_copy(t2, y);
+    }
+    BN_copy(x, s1);
+    BN_copy(y, t1);
+
+    return r1;
 }
 
 void PrintUsage()
