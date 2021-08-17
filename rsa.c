@@ -118,7 +118,7 @@ int ExpMod(BIGNUM *r, const BIGNUM *a, const BIGNUM *e, BIGNUM *m)
     BN_one(res);
     BN_mod(mul, a, m, ctx);
     BN_copy(q, e);
-    BN_dec2bn(&two, "2");
+    BN_hex2bn(&two, "2");
 
     while (!BN_is_zero(q)){
         BN_div(q, rem, q, two, ctx);
