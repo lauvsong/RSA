@@ -15,7 +15,10 @@ int BOB10_RSA_free(BOB10_RSA *b10rsa);
 int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits);
 int BOB10_RSA_Enc(BIGNUM *c, BIGNUM *m, BOB10_RSA *b10rsa);
 int BOB10_RSA_Dec(BIGNUM *m,BIGNUM *c, BOB10_RSA *b10rsa);
+int MakePQ(BIGNUM *p, BIGNUM *q);
+int MillerRabin(BIGNUM *p);
 BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b);
+int ExpMod(BIGNUM *r, const BIGNUM *a, const BIGNUM *e, BIGNUM *m);
 
 BOB10_RSA *BOB10_RSA_new()
 {
@@ -103,6 +106,62 @@ int BOB10_RSA_Dec(BIGNUM *m,BIGNUM *c, BOB10_RSA *b10rsa)
 {
     ExpMod(m,c,b10rsa->d,b10rsa->n);
     return 1;
+}
+
+int MakePQ(BIGNUM *p, BIGNUM *q, int nBits)
+{
+    int pBits = nBits / 2;
+
+    while (1){
+        BN_rand(p, pBits, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY);
+        BN_rand(q, pBits, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY);
+
+        if ((MillerRabin(p) == 1) && (MillerRabin(q) == 1)) break;
+    }
+    return 1;
+}
+
+int MillerRabin(BIGNUM *p)
+{
+    int k = 0;
+    BIGNUM *a = BN_new();
+    BIGNUM *g = BN_new();
+    BIGNUM *one = BN_new();
+    BIGNUM *two = BN_new();
+    BIGNUM *rem = BN_new();
+    BIGNUM *x = BN_new();
+    BIGNUM *bound = BN_new();
+    BN_CTX *ctx = BN_CTX_new();
+
+    int res = 0;
+
+    BN_one(one);
+    BN_hex2bn(&two,"2");
+    
+    BN_sub(g,p,one);
+    BN_div(g,rem,g,two,ctx);
+
+    while (BN_is_zero(rem)){
+        k++;
+        BN_div(g,rem,g,two,ctx);
+    }
+
+    for (int i=0;i<k;i++){
+        BN_rand_range(a,bound);
+        ExpMod(x,a,g,p);
+
+        if (BN_is_one(x)) continue;
+        if (BN_cmp(a,bound) == 0) continue;
+
+        for (int j=0;j<k-1;j++){
+            ExpMod(x,x,two,p);
+            if (BN_cmp(x,bound) == 0){
+                res = 1;
+                break;
+            }
+        }
+    }
+    return res;
 }
 
 // r = a**e mod m
