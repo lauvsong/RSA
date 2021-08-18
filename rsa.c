@@ -57,7 +57,6 @@ int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits)
     BIGNUM *pq = BN_new();
     BIGNUM *pn = BN_new();
     BIGNUM *one = BN_new();
-    BIGNUM *zero = BN_new();
 
     BIGNUM *e = BN_new();
     BIGNUM *d = BN_new();
@@ -100,6 +99,21 @@ int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits)
     BN_copy(b10rsa->e,e);
     BN_copy(b10rsa->d,d);
     BN_copy(b10rsa->n,n);
+
+    if (p != NULL) BN_free(p);
+    if (q != NULL) BN_free(q);
+    if (n != NULL) BN_free(n);
+    if (pp != NULL) BN_free(pp);
+    if (pq != NULL) BN_free(pq);
+    if (pn != NULL) BN_free(pn);
+    if (one != NULL) BN_free(one);
+    if (e != NULL) BN_free(e);
+    if (gcd != NULL) BN_free(gcd);
+    if (d != NULL) BN_free(d);
+    if (x != NULL) BN_free(x);
+    if (y != NULL) BN_free(y);
+    if (ctx != NULL) BN_CTX_free(ctx);
+
     return 1;
 }
 
@@ -201,6 +215,14 @@ int ExpMod(BIGNUM *r, const BIGNUM *a, const BIGNUM *e, BIGNUM *m)
     }
 
     BN_copy(r, res);
+
+    if (res != NULL) BN_free(res);
+    if (rem != NULL) BN_free(rem);
+    if (q != NULL) BN_free(q);
+    if (mul != NULL) BN_free(mul);
+    if (two != NULL) BN_free(two);
+    if (ctx != NULL) BN_CTX_free(ctx);
+
     return 1;
 }
 
@@ -217,8 +239,8 @@ BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b)
     BIGNUM *q = BN_new();
     BIGNUM *r = BN_new();
     BIGNUM *zero = BN_new();
-    BN_CTX *ctx = BN_CTX_new();
     BIGNUM *tmp = BN_new();
+    BN_CTX *ctx = BN_CTX_new();
 
     BN_copy(r1, a);
     BN_copy(r2, b);
@@ -251,6 +273,17 @@ BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b)
             BN_add(x,x,b);
         }
     }
+
+    if (r2 != NULL) BN_free(r2);
+    if (s1 != NULL) BN_free(s1);
+    if (s2 != NULL) BN_free(s2);
+    if (t1 != NULL) BN_free(t1);
+    if (t2 != NULL) BN_free(t2);
+    if (q != NULL) BN_free(q);
+    if (r != NULL) BN_free(r);
+    if (zero != NULL) BN_free(zero);
+    if (tmp != NULL) BN_free(tmp);
+    if (ctx != NULL) BN_CTX_free(ctx);
 
     return r1;
 }
