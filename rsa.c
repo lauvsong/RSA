@@ -57,9 +57,11 @@ int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits)
     BIGNUM *pq = BN_new();
     BIGNUM *pn = BN_new();
     BIGNUM *one = BN_new();
+    BIGNUM *zero = BN_new();
 
     BIGNUM *e = BN_new();
     BIGNUM *d = BN_new();
+    BIGNUM *gcd = BN_new();
     BN_CTX *ctx = BN_CTX_new();
 
     // define p, q
@@ -87,8 +89,8 @@ int BOB10_RSA_KeyGen(BOB10_RSA *b10rsa, int nBits)
     BN_hex2bn(&e, "2");
 
     while (BN_cmp(e,pn) == -1){
-        e = XEuclid(x,y,e,pn);
-        if (BN_is_one(e)) break;
+        gcd = XEuclid(x,y,e,pn);
+        if (BN_is_one(gcd)) break;
         BN_add(e, e, one);
     }
 
@@ -157,6 +159,9 @@ int MillerRabin(BIGNUM *p)
     }
 
     BN_rand_range(a,bound);
+    while(BN_cmp(a,two) == -1)
+        BN_rand_range(a,bound);
+
     ExpMod(x,a,g,p);
     if (BN_is_one(x)) return 1;
     if (BN_cmp(x,bound) == 0) return 1;
@@ -211,6 +216,7 @@ BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b)
 
     BIGNUM *q = BN_new();
     BIGNUM *r = BN_new();
+    BIGNUM *zero = BN_new();
     BN_CTX *ctx = BN_CTX_new();
     BIGNUM *tmp = BN_new();
 
@@ -238,6 +244,13 @@ BIGNUM *XEuclid(BIGNUM *x, BIGNUM *y, const BIGNUM *a, const BIGNUM *b)
     }
     BN_copy(x, s1);
     BN_copy(y, t1);
+
+    if (BN_is_one(r1)){
+        BN_zero(zero);
+        if (BN_cmp(x,zero) == -1){
+            BN_add(x,x,b);
+        }
+    }
 
     return r1;
 }
